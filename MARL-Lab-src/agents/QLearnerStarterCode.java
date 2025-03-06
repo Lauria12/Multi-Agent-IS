@@ -6,28 +6,32 @@ import java.util.Arrays;
 public class QLearnerStarterCode implements Agent {
 
 	private double[] actionProbabilities;
-	private double learningRate, minProb;
+	private double learningRate, minProb, explorationRate;
 	private Random random;
+	private int iterationCount;
 
 	public QLearnerStarterCode(int numberOfActions) {
 		actionProbabilities = new double[numberOfActions];
-		Arrays.fill(actionProbabilities, 1.0 / numberOfActions); // Initialize uniform probabilities
+		Arrays.fill(actionProbabilities, 1.0 / numberOfActions);
 
-		learningRate = 0.05; // Increased learning rate for better adaptation
-		minProb = 0.05; // Reduced minimum probability for better exploitation
-
+		learningRate = 0.05;
+		minProb = 0.1;
+		explorationRate = 0.5;
 		random = new Random();
+		iterationCount = 1;
 	}
 
-	// Returns the probability of selecting a given action
 	@Override
 	public double actionProb(int index) {
 		return actionProbabilities[index];
 	}
 
-	// Select action based on probabilities
 	@Override
 	public int selectAction() {
+		if (random.nextDouble() < explorationRate) {
+			return random.nextInt(actionProbabilities.length);
+		}
+
 		double r = random.nextDouble();
 		double cumulative = 0.0;
 		for (int i = 0; i < actionProbabilities.length; i++) {
@@ -36,29 +40,29 @@ public class QLearnerStarterCode implements Agent {
 				return i;
 			}
 		}
-		return actionProbabilities.length - 1; // Fallback in case of precision issues
+		return actionProbabilities.length - 1;
 	}
 
-	// Learning Automata update rule with more adaptive changes
 	@Override
 	public void update(int ownAction, int opponentAction, double reward) {
-		// More adaptive probability updates
 		if (reward > 0) {
 			actionProbabilities[ownAction] += learningRate * (1.0 - actionProbabilities[ownAction]);
 		} else {
 			actionProbabilities[ownAction] -= learningRate * (actionProbabilities[ownAction] - minProb);
 		}
 
-		// Normalize probabilities to ensure they sum to 1
 		double sum = Arrays.stream(actionProbabilities).sum();
 		for (int i = 0; i < actionProbabilities.length; i++) {
 			actionProbabilities[i] /= sum;
 		}
+
+		// Keep exploration rate higher to react better
+		iterationCount++;
+		explorationRate = Math.max(0.1, 0.5 / Math.sqrt(iterationCount));
 	}
 
-	// Returns action probability (as a replacement for Q-values)
 	@Override
 	public double getQ(int index) {
-		return actionProbabilities[index]; // Returning probability instead of Q-value
+		return actionProbabilities[index];
 	}
 }
